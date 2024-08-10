@@ -1,3 +1,4 @@
-const uuid = require("./utils");
+import getPosts, { getPostsLength } from "./postController.js";
+// const uuid = require("./utils");
 
-console.log("Om Namah Shivay", uuid());
+console.log("Om Namah Shivay", getPosts(), getPostsLength());
