@@ -1,27 +1,35 @@
 import http from "http";
+import fs from "fs/promises";
+import url from "url";
+import path from "path";
 import { loadEnv } from "./loadEnv.js";
 loadEnv();
 
-const server = http.createServer((req, res) => {
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const server = http.createServer(async (req, res) => {
   //   res.setHeader("Content-Type", "text/plain");
+  let filePath;
   switch (req.url) {
     case "/":
       res.writeHead(200, { "Content-Type": "text/html" });
-      res.end("<h1>Om Namah Shivay</h1>");
+      filePath = path.join(__dirname, "public", "index.html");
       break;
 
     case "/about":
       res.writeHead(200, { "Content-Type": "text/html" });
-      res.end(
-        "<h1>Shiva</h1><p>Is the Supreme Being in Shaivism, one of the major traditions within Hinduism. Shiva is known as The Destroyer within the Trimurti, the Hindu trinity which also includes Brahma and Vishnu. In the Shaivite tradition, Shiva is the Supreme Lord who creates, protects and transforms the universe.</p>"
-      );
+      filePath = path.join(__dirname, "public", "about.html");
       break;
 
     default:
       res.writeHead(404, { "Content-Type": "text/html" });
-      res.end("<p>Not found</p>");
+      filePath = path.join(__dirname, "public", "not-found.html");
       break;
   }
+
+  const data = await fs.readFile(filePath);
+  res.end(data);
 });
 
 server.listen(process.env.PORT, () => {
