@@ -8,6 +8,41 @@ loadEnv();
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const loggerMiddleware = (req, res, next) => {
+  console.log(req.url);
+  next();
+};
+
+const jsonMiddleware = (req, res, next) => {
+  res.setHeader("Content-Type", "application/json");
+  next();
+};
+
+const getUsersHandler = (req, res, users) => {
+  res.write(JSON.stringify(users));
+  res.end();
+};
+
+const getUserByIdHandler = (req, res, users) => {
+  const id = req.url.split("/")[3];
+  const user = users.find((user) => user.id === parseInt(id));
+
+  if (user) {
+    res.write(JSON.stringify(user));
+  } else {
+    res.statusCode = 404;
+    res.write(JSON.stringify({ message: "Not found!" }));
+  }
+
+  res.end();
+};
+
+const notFoundHanlder = (req, res) => {
+  res.statusCode = 404;
+  res.write(JSON.stringify({ message: "Not found!" }));
+  res.end();
+};
+
 const server = http.createServer(async (req, res) => {
   //   res.setHeader("Content-Type", "text/plain");
   let filePath;
@@ -40,27 +75,20 @@ const apiServer = http.createServer((req, res) => {
     { id: 4, name: "Ganesh" },
   ];
 
-  if (req.url === "/api/users" && req.method === "GET") {
-    res.setHeader("Content-Type", "application/json");
-    res.write(JSON.stringify(users));
-    res.end();
-  } else if (req.url.match(/\/api\/users\/([0-9]+)/) && req.method === "GET") {
-    const id = req.url.split("/")[3];
-    const user = users.find((user) => user.id === parseInt(id));
-    res.setHeader("Content-Type", "application/json");
-    if (user) {
-      res.write(JSON.stringify(user));
-    } else {
-      res.statusCode = 404;
-      res.write(JSON.stringify({ message: "Not found!" }));
-    }
-    res.end();
-  } else {
-    res.setHeader("Content-Type", "application/json");
-    res.statusCode = 404;
-    res.write(JSON.stringify({ message: "Not found!" }));
-    res.end();
-  }
+  loggerMiddleware(req, res, () => {
+    jsonMiddleware(req, res, () => {
+      if (req.url === "/api/users" && req.method === "GET") {
+        getUsersHandler(req, res, users);
+      } else if (
+        req.url.match(/\/api\/users\/([0-9]+)/) &&
+        req.method === "GET"
+      ) {
+        getUserByIdHandler(req, res, users);
+      } else {
+        notFoundHanlder(req, res);
+      }
+    });
+  });
 });
 
 apiServer.listen(process.env.PORT, () => {
