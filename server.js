@@ -8,6 +8,13 @@ loadEnv();
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const users = [
+  { id: 1, name: "Shiv" },
+  { id: 2, name: "Parvati" },
+  { id: 3, name: "Kartikeya" },
+  { id: 4, name: "Ganesh" },
+];
+
 const loggerMiddleware = (req, res, next) => {
   console.log(req.url);
   next();
@@ -18,12 +25,12 @@ const jsonMiddleware = (req, res, next) => {
   next();
 };
 
-const getUsersHandler = (req, res, users) => {
+const getUsersHandler = (req, res) => {
   res.write(JSON.stringify(users));
   res.end();
 };
 
-const getUserByIdHandler = (req, res, users) => {
+const getUserByIdHandler = (req, res) => {
   const id = req.url.split("/")[3];
   const user = users.find((user) => user.id === parseInt(id));
 
@@ -41,6 +48,20 @@ const notFoundHanlder = (req, res) => {
   res.statusCode = 404;
   res.write(JSON.stringify({ message: "Not found!" }));
   res.end();
+};
+
+const createUserHandler = (req, res) => {
+  let body = "";
+  req.on("data", (chunk) => {
+    body += chunk.toString();
+  });
+  req.on("end", () => {
+    const newUser = JSON.parse(body);
+    users.push(newUser);
+    res.statusCode = 201;
+    res.write(JSON.stringify(newUser));
+    res.end();
+  });
 };
 
 const server = http.createServer(async (req, res) => {
@@ -68,22 +89,17 @@ const server = http.createServer(async (req, res) => {
 });
 
 const apiServer = http.createServer((req, res) => {
-  const users = [
-    { id: 1, name: "Shiv" },
-    { id: 2, name: "Parvati" },
-    { id: 3, name: "Kartikeya" },
-    { id: 4, name: "Ganesh" },
-  ];
-
   loggerMiddleware(req, res, () => {
     jsonMiddleware(req, res, () => {
       if (req.url === "/api/users" && req.method === "GET") {
-        getUsersHandler(req, res, users);
+        getUsersHandler(req, res);
       } else if (
         req.url.match(/\/api\/users\/([0-9]+)/) &&
         req.method === "GET"
       ) {
-        getUserByIdHandler(req, res, users);
+        getUserByIdHandler(req, res);
+      } else if (req.url === "/api/users" && req.method === "POST") {
+        createUserHandler(req, res);
       } else {
         notFoundHanlder(req, res);
       }
